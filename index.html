@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MasterDriver BE – Klassenraum</title>
+<style>
+:root{--bg:#0b1020;--panel:#141c31;--line:#2a3654;--text:#eef3ff;--muted:#aab7d1;--accent:#77a7ff;--good:#63d6a0}
+*{box-sizing:border-box}body{margin:0;background:linear-gradient(145deg,#0b1020,#111a2e);color:var(--text);font:16px/1.5 system-ui,Segoe UI,sans-serif}
+header{padding:30px 20px 20px;max-width:1050px;margin:auto}h1{margin:0;font-size:clamp(28px,5vw,42px)}header p{color:var(--muted);max-width:720px}
+main{max-width:1050px;margin:auto;padding:0 20px 50px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}
+.card{background:rgba(20,28,49,.94);border:1px solid var(--line);border-radius:18px;padding:18px;margin-bottom:16px}
+button,select,textarea,input{font:inherit}button{background:var(--accent);color:#071226;border:0;border-radius:11px;padding:11px 15px;font-weight:700;cursor:pointer}
+button.secondary{background:#263653;color:var(--text);border:1px solid #405273}button:disabled{opacity:.5;cursor:not-allowed}
+label{display:block;color:var(--muted);font-size:14px;margin:12px 0 6px}select,textarea,input{width:100%;background:#0c1427;color:var(--text);border:1px solid #3a4968;border-radius:10px;padding:11px}
+textarea{min-height:180px;resize:vertical}.muted{color:var(--muted)}.tag{display:inline-block;border:1px solid #405273;color:#c8d8f7;border-radius:99px;padding:3px 9px;font-size:12px;margin:3px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.question{font-size:20px;font-weight:650;margin:12px 0}
+.hidden{display:none}.score{font-size:30px;font-weight:800;color:var(--good)}ol{padding-left:22px}.small{font-size:13px;color:var(--muted)}
+footer{max-width:1050px;margin:auto;padding:0 20px 35px;color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+<header>
+  <div class="tag">Klassenraum-Version · Prototyp</div>
+  <h1>MasterDriver BE</h1>
+  <p>Dein Lerncoach für die Fahrlehrerprüfung Klasse BE. Übe einzelne Themen, strukturiere 15-Punkte-Antworten und simuliere eine mündliche Prüfung.</p>
+  <div class="row"><span class="tag">Verkehrsrecht & Verhalten</span><span class="tag">Fahrzeugtechnik</span><span class="tag">Pädagogik</span><span class="tag">Fahrdidaktik</span></div>
+</header>
+<main>
+<section class="grid">
+ <div class="card"><h2>📚 Themen üben</h2><p class="muted">Ziehe eine Frage aus dem Themenkatalog als Übungsaufgabe.</p><button onclick="show('practice')">Übung starten</button></div>
+ <div class="card"><h2>🎙️ Prüfungssimulation</h2><p class="muted">Vier Prüferbereiche, nacheinander mit Rückfragen.</p><button onclick="startExam()">Simulation starten</button></div>
+ <div class="card"><h2>🧩 15-Punkte-Aufbau</h2><p class="muted">Begriff, Hauptteil, Praxisbezug und Abschluss.</p><button class="secondary" onclick="show('rubric')">Bewertungsraster ansehen</button></div>
+</section>
+
+<section id="practice" class="card hidden">
+<h2>Themenübung</h2>
+<label for="area">Prüfungsbereich</label>
+<select id="area"><option value="all">Alle Bereiche</option><option>Verkehrsrecht / Verkehrsverhalten</option><option>Fahrzeugtechnik</option><option>Unterrichtsplanung / Unterrichten</option><option>Pädagogik / Lernprozesse</option></select>
+<div id="qPractice" class="question">Wähle „Neue Frage“.</div>
+<div class="row"><button onclick="newQuestion()">Neue Frage</button><button class="secondary" onclick="copyPracticePrompt()">Antwort mit ChatGPT auswerten</button></div>
+<label for="answer">Deine Antwort</label><textarea id="answer" placeholder="Antworte so, wie du es in der Prüfung erklären würdest …"></textarea>
+<p class="small">Hinweis: Die Auswertung erfolgt in deinem eigenen ChatGPT-Chat, wenn du den vorbereiteten Prompt dort einfügst. Diese Webdatei enthält keinen eingebauten KI-Dienst.</p>
+</section>
+
+<section id="exam" class="card hidden">
+<h2>Mündliche Prüfungssimulation</h2>
+<div class="row"><span class="tag" id="examProgress">Prüfer 1 von 4</span><span class="tag">ca. 30 Minuten</span></div>
+<h3 id="examArea">Verkehrsrecht</h3><div id="examQ" class="question"></div>
+<label for="examAnswer">Deine mündliche Antwort (Stichpunkte oder Transkript)</label>
+<textarea id="examAnswer" placeholder="Sprich deine Antwort und halte die wichtigsten Punkte fest …"></textarea>
+<div class="row"><button class="secondary" onclick="copyExamPrompt()">Antwort auswerten lassen</button><button id="nextExam" onclick="nextExaminer()">Nächster Prüfer</button></div>
+<p class="small">Die Simulation stellt hier die Prüfungsfragen. Für eine echte dialogische KI-Prüfung kann der jeweilige Prompt in ChatGPT eingefügt werden.</p>
+</section>
+
+<section id="rubric" class="card hidden">
+<h2>15-Punkte-Antwortstruktur</h2>
+<ol>
+<li><b>Begriff / Grundlage</b> – Thema einführen und ggf. Rechts- oder Fachgrundlage nennen (ca. 2 Punkte).</li>
+<li><b>Hauptteil</b> – systematisch erklären: Was? Wie? Warum? Welche Folge? (ca. 7–8 Punkte).</li>
+<li><b>Praxisbezug</b> – konkretes Beispiel aus Straßenverkehr oder Fahrschule (ca. 3–4 Punkte).</li>
+<li><b>Abschluss</b> – Kernaussage bzw. prüfungsrelevanter Merksatz (ca. 1–2 Punkte).</li>
+</ol>
+<p class="small">Das ist eine Lern- und Strukturierungshilfe aus dem hinterlegten Leitfaden, kein offizieller Bewertungsschlüssel des Verkehrs-Instituts.</p>
+</section>
+
+<section class="card">
+<h2>So nutzt du den Klassenraum</h2>
+<ol><li>Wähle einen Bereich und beantworte eine Frage laut oder schriftlich.</li><li>Kopiere den Auswertungsprompt in ChatGPT und füge deine Antwort ein.</li><li>Lass Lücken benennen und antworte anschließend erneut.</li></ol>
+<p class="small">Jeder Teilnehmer sollte einen eigenen Chat nutzen. Diese lokale Prototyp-Datei speichert keine Antworten auf einem Server und überträgt keine persönlichen Daten.</p>
+</section>
+</main>
+<footer>Grundlage: „Themenkatalog BE_neu.pdf“ und „Prüfungsaufbau – Fahrlehrer Klasse BE“. Die Fragen sind auszugsweise übernommen bzw. sinngemäß gekürzt. Für verbindliche Prüfungsvorgaben gilt der aktuelle Original-Themenkatalog.</footer>
+<script>
+const questions = [
+{a:"Verkehrsrecht / Verkehrsverhalten",q:"Erläutern Sie die Vorschriften der StVO über die Vorfahrt an Kreuzungen und Einmündungen mit und ohne vorfahrtsregelnde Zeichen (mit Skizze)."},
+{a:"Verkehrsrecht / Verkehrsverhalten",q:"Erläutern Sie das verkehrsgerechte Verhalten eines Kraftfahrers beim Wenden und Rückwärtsfahren."},
+{a:"Verkehrsrecht / Verkehrsverhalten",q:"Welche Ursachen können die Fahrtüchtigkeit eines Kraftfahrers nachteilig beeinflussen?"},
+{a:"Verkehrsrecht / Verkehrsverhalten",q:"Erläutern Sie das Verhalten an Bahnübergängen."},
+{a:"Verkehrsrecht / Verkehrsverhalten",q:"Erläutern Sie die Sicherheitsabstände, die der Führer eines Kraftfahrzeugs einzuhalten hat."},
+{a:"Verkehrsrecht / Verkehrsverhalten",q:"Welche Ursachen führen zu Massenunfällen bei Nebel auf Autobahnen und wie muss sich ein Fahrzeugführer verhalten?"},
+{a:"Verkehrsrecht / Verkehrsverhalten",q:"Erläutern Sie das verkehrsgerechte Verhalten beim Fahrstreifenwechsel mit Beispielen und Skizzen."},
+{a:"Verkehrsrecht / Verkehrsverhalten",q:"Was hat ein Fahrzeugführer bei der Wahl der Fahrgeschwindigkeit einschließlich der Gefahrenlehre zu berücksichtigen?"},
+{a:"Verkehrsrecht / Verkehrsverhalten",q:"Erläutern Sie das verkehrsgerechte Verhalten beim Abbiegen einschließlich Gefahrenlehre."},
+{a:"Fahrzeugtechnik",q:"Erläutern Sie den grundsätzlichen Aufbau und die Aufgabe einer Batterie im Kraftfahrzeug. Geben Sie Wartungshinweise."},
+{a:"Fahrzeugtechnik",q:"Beschreiben Sie die Unterschiede des Dieselmotors im Vergleich zum 4-Takt-Otto-Motor."},
+{a:"Fahrzeugtechnik",q:"Erläutern Sie Aufbau und Wirkungsweise der Lenkung eines Pkw anhand einer Skizze."},
+{a:"Fahrzeugtechnik",q:"Was versteht man unter aktiver bzw. passiver Sicherheit? Benennen Sie entsprechende Einrichtungen in heutigen Pkw."},
+{a:"Fahrzeugtechnik",q:"Erläutern Sie Funktion und Aufbau einer Zugkugelkupplung mit Stabilisierungseinrichtung und Skizze."},
+{a:"Fahrzeugtechnik",q:"Erläutern Sie den Energiefluss eines batterieelektrischen Fahrzeugs (BEV) anhand einer Skizze."},
+{a:"Unterrichtsplanung / Unterrichten",q:"Welche Funktionen erfüllen Medien im Theorieunterricht? Geben Sie konkrete Beispiele für den Unterrichtseinsatz und begründen Sie die Auswahl."},
+{a:"Unterrichtsplanung / Unterrichten",q:"Beschreiben und erläutern Sie unterschiedliche Methoden, die in der Fahrschulausbildung angewendet werden. Nennen Sie Vor- und Nachteile."},
+{a:"Unterrichtsplanung / Unterrichten",q:"Zeigen Sie auf, wie Sie einen theoretischen Unterricht planen und welche Kriterien dabei berücksichtigt werden müssen."},
+{a:"Pädagogik / Lernprozesse",q:"Erläutern Sie die Grundregeln der Kommunikation nach Watzlawick und mögliche Probleme zwischen Fahrlehrer und Fahrschüler."},
+{a:"Pädagogik / Lernprozesse",q:"Wie können Sie als Fahrlehrer dazu beitragen, dass die Zahl der Unfälle, an denen Kinder beteiligt sind, vermindert wird?"},
+{a:"Pädagogik / Lernprozesse",q:"Erläutern Sie unterschiedliche Unterrichts- und Erziehungsstile und deren Anwendung in der Fahrschule."},
+{a:"Pädagogik / Lernprozesse",q:"Welche Faktoren beeinflussen die Informationsaufnahme und -verarbeitung und wie kann der Fahrlehrer darauf einwirken?"}
+];
+const examiners=[
+{n:"Prüfer 1 · Verkehrsrecht / Verkehrsverhalten",q:"Erläutern Sie das verkehrsgerechte Verhalten beim Abbiegen einschließlich Gefahrenlehre. Gehen Sie auf Beobachtung, Absicherung und typische Konflikte ein."},
+{n:"Prüfer 2 · Fahrzeugtechnik",q:"Erklären Sie Aufbau und Wirkungsweise einer Pkw-Bremsanlage. Gehen Sie auf die Aufgaben der wesentlichen Bauteile ein."},
+{n:"Prüfer 3 · Pädagogik",q:"Wie gehen Sie mit einem Fahrschüler um, der wiederholt Prüfungsangst zeigt? Begründen Sie Ihr pädagogisches Vorgehen."},
+{n:"Prüfer 4 · Verkehrsverhalten / Fahrdidaktik",q:"Sie begleiten einen Fahrschüler, der beim Fahrstreifenwechsel den rückwärtigen Verkehr unzureichend beobachtet. Wie analysieren, korrigieren und sichern Sie den Lernfortschritt?"}
+];
+let current=null,examIndex=0;
+function show(id){document.querySelectorAll('main section[id]').forEach(s=>s.classList.add('hidden'));document.getElementById(id).classList.remove('hidden');}
+function newQuestion(){let area=document.getElementById('area').value;let pool=questions.filter(x=>area==='all'||x.a===area);current=pool[Math.floor(Math.random()*pool.length)];document.getElementById('qPractice').textContent=current.q;document.getElementById('answer').value='';}
+function promptFor(q,a){return `Du bist ein sachlicher Prüfer für die Fahrlehrerprüfung Klasse BE. Bewerte meine Antwort anhand einer Lernhilfe mit maximal 15 Punkten. Struktur: Begriff/Grundlage ca. 2 Punkte; Hauptteil ca. 7–8; Praxisbezug ca. 3–4; Abschluss ca. 1–2. Das ist eine Orientierung, kein offizieller Bewertungsschlüssel.\\n\\nPrüfungsfrage: ${q}\\n\\nMeine Antwort:\\n${a}\\n\\nGib: 1) vorläufige Punktzahl von 15 mit Begründung, 2) fachlich richtige Bestandteile, 3) fehlende oder unklare Punkte, 4) konkrete Verbesserung, 5) eine passende Prüfer-Nachfrage. Erfinde keine Quellen; kennzeichne Unsicherheiten und weise bei aktuellen Rechtsfragen auf nötige Aktualitätsprüfung hin.`}
+function copy(text){navigator.clipboard.writeText(text).then(()=>alert('Prompt kopiert. Füge ihn in deinen ChatGPT-Chat ein.')).catch(()=>alert('Kopieren nicht möglich – bitte den Prompt manuell markieren.'))}
+function copyPracticePrompt(){if(!current){alert('Bitte zuerst eine Frage auswählen.');return}copy(promptFor(current.q,document.getElementById('answer').value))}
+function startExam(){examIndex=0;renderExam();show('exam')}
+function renderExam(){let e=examiners[examIndex];document.getElementById('examProgress').textContent=`Prüfer ${examIndex+1} von 4`;document.getElementById('examArea').textContent=e.n;document.getElementById('examQ').textContent=e.q;document.getElementById('examAnswer').value='';document.getElementById('nextExam').textContent=examIndex===3?'Simulation beenden':'Nächster Prüfer'}
+function nextExaminer(){if(examIndex<3){examIndex++;renderExam()}else{show('rubric')}}
+function copyExamPrompt(){let e=examiners[examIndex];copy(`Führe eine realistische mündliche Fahrlehrerprüfung Klasse BE durch. Bleibe in der Rolle der Prüfungskommission. Stelle nur eine Frage bzw. Nachfrage auf einmal und gib nicht sofort Feedback. Bewerte meine Antwort am Ende dieses Prüferblocks anhand einer 15-Punkte-Lernorientierung.\\nPrüferbereich: ${e.n}\\nFrage: ${e.q}\\nMeine Antwort: ${document.getElementById('examAnswer').value}`)}
+</script>
+</body></html>
